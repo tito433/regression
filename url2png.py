@@ -47,9 +47,9 @@ driver.set_window_size(1400, 1000) # set the window size that you need
 print "Browser loaded"
 
 ll_file=open(file_log,"w")
-
+llen=len(lines)
 count = 0
-while (url_count>0 and count < max_url_save):
+while (count<llen && count<url_count):
     
     urn=lines[count]
     
