@@ -5,7 +5,7 @@ import sys
 import shutil
 import os.path
 
-max_url_save=433
+max_url_save=99999
 
 dir_cur=os.path.dirname(os.path.realpath(__file__))+"/"
 if len(sys.argv) < 2:
@@ -46,10 +46,10 @@ driver = webdriver.PhantomJS(executable_path=phantomjs_path, service_log_path=os
 driver.set_window_size(1400, 1000) # set the window size that you need 
 print "Browser loaded"
 
-ll_file=open(file_log,"w")
+ll_file=open(file_log,"w",0)
 llen=len(lines)
 count = 0
-while (count<llen && count<url_count):
+while (count<llen and count<url_count):
     
     urn=lines[count]
     

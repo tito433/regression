@@ -10,7 +10,7 @@ dir_cur=os.path.dirname(os.path.realpath(__file__))+"/"
 
 #print urlparse(sys.argv[1])
 #sys.exit(0)
-depth=10
+depth=3
 urls=[]
 
 if len(sys.argv) < 2:
@@ -23,7 +23,7 @@ if len(sys.argv) >2:
 domain_name=sys.argv[1]
 
 rls=urlparse(domain_name)
-ll_file=open(dir_cur+rls.netloc+'.urls',"w")
+ll_file=open(dir_cur+rls.netloc+'.urls',"w",0)
 
 print "Parsing domain:%s --depth:%d" %(domain_name,depth)
 
@@ -35,7 +35,7 @@ def crawl(url, maxlevel):
     urls.append(url)
 
     if not url.startswith(domain_name):
-        print "[Skip] %s (%s) domian missmatch!" % (url,domain_name)
+        print "[Skip] %s domian missmatch!" % (url)
         return False
 
    
