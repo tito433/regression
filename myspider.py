@@ -15,7 +15,7 @@ if len(sys.argv)==1:
 	print "Params are: <domain> <test> <depth>"
 	sys.exit(0)
 
-depth=0
+depth=4
 urls=[]
 allowed_domain=['globalblue.cn','globalblue.ru','globalblue.zh','globalblue.com',
 	'globalblue.cue.cloud']
