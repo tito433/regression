@@ -5,85 +5,100 @@ import sys
 import shutil
 import os.path
 from urlparse import urlparse
+import csv
 
-dir_cur=os.path.dirname(os.path.realpath(__file__))+"/"
+
+
 
 #print urlparse(sys.argv[1])
-#sys.exit(0)
-depth=3
-urls=[]
-exclude_urls=(".js",".css")
+if len(sys.argv)==1:
+	print "Params are: <domain> <test> <depth>"
+	sys.exit(0)
 
-dir_cur=os.path.dirname(os.path.realpath(__file__))+"/"
+depth=0
+urls=[]
+allowed_domain=['globalblue.cn','globalblue.ru','globalblue.zh','globalblue.com',
+	'globalblue.cue.cloud']
+
+exclude_file_ext=(".js",".css",".ico",)
+
+dir_cur=os.path.dirname(os.path.realpath(__file__))
 if len(sys.argv) < 2:
-    print "Insufficient param, tell which file to load as url lines."
-    sys.exit(0)
+	print "Insufficient param, tell which file to load as url lines."
+	sys.exit(0)
 
 domain_name=sys.argv[1]
+test_name='test' if len(sys.argv) <3 else sys.argv[2] 
 rls=urlparse(domain_name)
-domain=rls.netloc
-if len(sys.argv) >2:
-    domain=sys.argv[2]
+if rls.scheme =='':
+	domain_name="http://"+domain_name
+allowed_domain+=(str(rls.netloc),)
 
-dir_output=dir_cur+domain+"/"
+dir_output=os.path.join(dir_cur,test_name)
+
 if not os.path.exists(dir_output):
-    os.mkdir(dir_output)
+	os.mkdir(dir_output)
 
 if len(sys.argv) >3:
-    depth=int(sys.argv[3])
+	depth=int(sys.argv[3])
 
-ll_file=open(dir_output+domain+".urls","w",0)
+++depth
 
+file_urls_path=os.path.join(dir_output,test_name+".urls")
+if os.path.isfile(file_urls_path):
+	urls = [line.rstrip('\n') for line in open(file_urls_path)]
 
+file_csv=open(os.path.join(dir_output,test_name+".csv"),"wb",0)
 
+logwriter = csv.writer(file_csv, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+print "Crawling domain:%s --depth:%d" %(rls.netloc,depth)
+logwriter.writerow(["TYPE","URL","PARENT"])
 
-
-print "Parsing domain:%s --depth:%d" %(domain_name,depth)
-
-
-link_re = re.compile(r'href="(.*?)"')
+link_re = re.compile(r'href="((?!#).*?)"')
 
 def isValid(url):
-    if not url.startswith(domain_name):
-        print "[Skip] %s domian missmatch!" % (url)
-        return False
-    if url.endswith(exclude_urls):
-        print "[Skip] %s forbidden files!" % (url)
-        return False
-    return True
+	rls=urlparse(url)
+	if not any(s for s in allowed_domain if  str(rls.netloc).endswith(s)) or str(rls.path).endswith(exclude_file_ext):
+		return False
+	return True
 
+def crawl(url, maxlevel,parent=False):
+	if not parent:
+		parent=url
 
-def cleanUP(url):
-    hChar=url.find('#')
-    if hChar !=-1:
-       url=url[:hChar]
-    return url
-     
-def crawl(url, maxlevel):
-    #check domain
-    if not isValid(url):
-        return False
+	if maxlevel<0 or url in urls:
+		return False
 
-    urls.append(url)
-    print "[Load] %s" %(url)
-    ll_file.write(url+"\n")
-    if maxlevel>0:
-        # Get the webpage
-        resp = requests.get(url)
-        # Check if successful
-        if(resp.status_code != 200):
-            print "[Error] %s got %d status" %(url,resp.status_code)
-            return False
-        # Find and follow all the links
-        links = link_re.findall(resp.text)
-        for link in links:
-            if link.startswith('/'):
-                link=domain_name+link
-            link=cleanUP(link)
-            if link not in urls:
-                crawl(link, maxlevel - 1)
+	urls.append(url)
+	f = open(file_urls_path, 'a+', 0)
+	f.write(url+"\n")
+	f.close()
+	
+	print "Crawling: ",url, " Depth:",maxlevel
 
-crawl(sys.argv[1], depth)
+	try:
+		resp = requests.get(url, verify=False, timeout=20)
+		if(resp.status_code != 200):
+			logwriter.writerow([resp.status_code,url,parent])
+			file_csv.flush()
+			os.fsync(file_csv.fileno())
+		else:
+			for link in link_re.findall(resp.text):
+				if link.startswith('/'):
+					link=domain_name+link
+				if link.startswith('?'):
+					link=url+link
+				if isValid(link) and link not in urls:
+					crawl(link, maxlevel - 1,url)
 
-print "Spider Scrapper finished."
+	except Exception as e:
+		logwriter.writerow(["Error",url,parent])
+		file_csv.flush()
+		os.fsync(file_csv.fileno())
+		
+
+crawl(domain_name, depth)
+file_csv.close()
+
+print "Spider Scrapper finished. Total url fetched:%d" %(len(urls))
 

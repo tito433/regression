@@ -3,20 +3,23 @@ from selenium import webdriver
 import sys
 import shutil
 import glob, os
+import time
+millis = int(round(time.time() * 1000))
 
-max_url_save=400
+max_url_save=9999
 
 dir_cur=os.path.dirname(os.path.realpath(__file__))+"/"
 if len(sys.argv) < 2:
-	print "Insufficient param, tell which file to load as url lines."
+	print "Insufficient param, tell me which folder has the url file?"
 	sys.exit(0)
 
 
-dir_output=dir_cur+sys.argv[1]+"/"
+dir_output=os.path.join(dir_cur,sys.argv[1])
 if not os.path.exists(dir_output):
     print dir_output+" does not exist. I will exit now."
     sys.exit(0)
 
+file_url=''
 os.chdir(dir_output)
 for file in glob.glob("*.urls"):
     file_url=file
@@ -27,8 +30,12 @@ if not os.path.isfile(file_url):
 
 print "Input file:"+file_url
 
-file_log=sys.argv[1]+'.map'
-print "Output log:"+file_log
+dir_pic=os.path.join(dir_output,"%d"%(millis))
+if not os.path.exists(dir_pic):
+    os.mkdir(dir_pic)
+
+file_log="%d.map" % (millis)
+
 print "Fetching %s" % file_url
 lines = [line.rstrip('\n') for line in open(file_url)]
 url_count=len(lines)
@@ -48,15 +55,16 @@ print "Browser loaded"
 ll_file=open(file_log,"w",0)
 llen=len(lines)
 count = 0
+os.chdir(dir_pic)
 while (count<llen and count<url_count):
     
     urn=lines[count]
     
     driver.get(urn)
-    file_name=count+".png"
-    driver.save_screenshot(file_name)
+    driver.save_screenshot("%d.png" % (count))
     ll_file.write("%d,%s\n"%(count,urn))
     print "[saved] %d. %s" %(count,urn)
     count+=1
 
+print "Output log:"+file_log
 print "Finish!"

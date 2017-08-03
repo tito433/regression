@@ -1,11 +1,10 @@
 import re
 import sys
+import os
+from urlparse import urlparse
 
-url='www.globalblue.com'
-m = re.search('([a-z0-9|-]+\.)*([a-z0-9|-]+\.[a-z]+)',url)
-pos=0
-if len(sys.argv) >= 2:
-	pos=int(sys.argv[1])
-	print "Pos:%d" % (pos)
+string='20,http://globalblue.test.globalblue.cue.cloud/destinations/finland/'
+pattern = re.compile("^(\d+),(.*)$")
+idx,url=[x for x in pattern.split(string) if x]
 
-print m.group(pos)
+print "id:%s, url:%s" %(idx,url)
